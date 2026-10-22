@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>English Practice – Interactive Test</title>
+<style>
+:root{--blue:#1769aa;--pale:#eaf4ff;--green:#18864b;--red:#c0392b;--ink:#203040}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f2f6fb;color:var(--ink);line-height:1.55}
+.wrap{max-width:900px;margin:auto;padding:16px}.card{background:white;border-radius:16px;padding:22px;box-shadow:0 5px 20px #17324d14;margin:12px 0}
+h1{font-size:1.45rem;margin:0 0 8px;color:#124e82}h2{font-size:1.15rem;margin:0 0 8px}.muted{color:#65788b;font-size:.94rem}
+button,input{font:inherit}button{border:0;border-radius:10px;padding:10px 15px;cursor:pointer;font-weight:700;background:var(--blue);color:white}
+button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#e5edf5;color:#203040}.reset{background:#fff0e8;color:#9b3c17}.nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;margin-top:18px}
+input[type=password]{padding:11px;border:1px solid #bdcbd8;border-radius:9px;width:100%;max-width:300px}
+.option{display:flex;align-items:flex-start;gap:10px;border:1px solid #d6e1eb;padding:12px;border-radius:10px;margin:9px 0;cursor:pointer}
+.option:hover{background:#f5faff}.option input{margin-top:6px;accent-color:var(--blue)}.option.locked{cursor:default}
+.feedback{padding:14px;border-radius:10px;margin-top:14px;background:#f0f6fc;border-left:4px solid var(--blue)}
+.correct{border-left-color:var(--green);background:#eaf8ef}.wrong{border-left-color:var(--red);background:#fff0ee}
+.progress{height:8px;background:#e1e9f0;border-radius:8px;overflow:hidden;margin:12px 0}.bar{height:100%;background:#2484ca;width:0}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.pills button{padding:7px 10px;font-size:.9rem}
+.small{font-size:.9rem}.sentence{font-size:1.05rem;margin:15px 0}.email{background:#f8fbff;padding:15px;border-radius:10px;white-space:pre-line}
+@media(max-width:600px){.wrap{padding:9px}.card{padding:16px}h1{font-size:1.25rem}.nav button{flex:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section id="login" class="card">
+    <h1>English Practice – Interactive Test</h1>
+    <p>Nhập mật khẩu để bắt đầu làm bài.</p>
+    <input id="pw" type="password" placeholder="Mật khẩu" autocomplete="off">
+    <button onclick="unlock()">Vào làm bài</button>
+    <p id="pwmsg" class="muted"></p>
+  </section>
+  <main id="app" hidden>
+    <div class="card">
+      <h1>English Practice – Interactive Test</h1>
+      <div class="muted">Mỗi lần chỉ hiển thị một câu. Khi đã chọn đáp án, câu đó sẽ bị khóa và hiện điểm cùng lời giải tiếng Việt.</div>
+      <div class="pills" id="sectionNav"></div>
+      <div id="sectionHeading"></div>
+      <div class="progress"><div id="bar" class="bar"></div></div>
+      <div id="questionArea"></div>
+      <div class="nav">
+        <button id="prev" class="secondary" onclick="move(-1)">← Câu trước</button>
+        <span id="counter" class="muted"></span>
+        <button id="next" onclick="move(1)">Câu tiếp →</button>
+      </div>
+      <div class="nav"><button class="secondary" onclick="jumpFirst()">Về câu 1 phần này</button><button class="reset" onclick="resetSection()">Reset riêng phần này</button></div>
+    </div>
+    <div class="card"><b>Tổng kết phần đang làm:</b> <span id="score"></span></div>
+  </main>
+</div>
+<script>
+const sections = [
+{title:"Bài 1 – Pronunciation",desc:"Find the word which has a different sound in the part underlined. (1.0 point)",questions:[
+{type:"mc",q:"1. Choose the word with a different sound.",options:["A. orphanage","B. patient","C. agree","D. about"],correct:1,why:"Theo đáp án cung cấp: B. patient. Chú ý so sánh âm của phần được gạch chân trong các từ.",vi:"Chọn từ có cách phát âm khác ở phần gạch chân."},
+{type:"mc",q:"2. Choose the word with a different sound.",options:["A. verb","B. herb","C. never","D. person"],correct:2,why:"Theo đáp án cung cấp: C. never. Đối chiếu âm của phần gạch chân trong từng từ.",vi:"Chọn từ có cách phát âm khác ở phần gạch chân."},
+{type:"mc",q:"3. Choose the word with a different sound.",options:["A. leaf","B. favourite","C. farm","D. of"],correct:3,why:"Theo đáp án cung cấp: D. of. Âm của phần gạch chân trong “of” khác với các lựa chọn còn lại.",vi:"Chọn từ có cách phát âm khác ở phần gạch chân."},
+{type:"mc",q:"4. Choose the word with a different sound.",options:["A. decid<u>ed</u>","B. work<u>ed</u>","C. watch<u>ed</u>","D. clapp<u>ed</u>"],correct:0,why:"Đáp án A. decided. Đuôi -ed trong “decided” phát âm /ɪd/, còn worked, watched, clapped có đuôi -ed phát âm /t/.",vi:"Chọn từ có cách phát âm đuôi -ed khác."},
+{type:"mc",q:"5. Choose the word with a different sound.",options:["A. listen<u>ed</u>","B. litter<u>ed</u>","C. pick<u>ed</u>","D. exchang<u>ed</u>"],correct:2,why:"Đáp án C. picked. Đuôi -ed trong “picked” phát âm /t/; listened, littered và exchanged có đuôi -ed phát âm /d/ hoặc /ɪd/ theo cách phát âm của từ.",vi:"Chọn từ có cách phát âm đuôi -ed khác."}]},
+{title:"Bài 3 – Word forms",desc:"Complete each sentence with the correct form of the word provided. (1.0 point)",questions:[
+{type:"text",q:"1. My dad enjoys ______ stamps, and he has a big stamp collection. (COLLECT)",answer:"collecting",why:"Sau động từ enjoy, ta dùng động từ thêm -ing: enjoy + V-ing.",vi:"Bố tôi thích sưu tầm tem, và bố có một bộ sưu tập tem lớn."},
+{type:"text",q:"2. Having a pet helps children take on more ______. (RESPONSIBLE)",answer:"responsibility",why:"Sau “more” cần danh từ. Responsible (có trách nhiệm) → responsibility (trách nhiệm).",vi:"Nuôi thú cưng giúp trẻ em đảm nhận nhiều trách nhiệm hơn."},
+{type:"text",q:"3. ______ vegetables are very good for your health. (COLOUR)",answer:"Colourful",why:"Cần tính từ bổ nghĩa cho danh từ “vegetables”: colour → colourful (nhiều màu sắc).",vi:"Các loại rau củ nhiều màu sắc rất tốt cho sức khỏe của bạn."},
+{type:"text",q:"4. Did you read books to the ______ in the nursing home last Sunday? (ELDER)",answer:"elderly",why:"“The elderly” là cụm danh từ chỉ người cao tuổi.",vi:"Chủ nhật tuần trước bạn có đọc sách cho những người cao tuổi ở viện dưỡng lão không?"},
+{type:"text",q:"5. At this school fair, you can exchange ______ paper for notebooks. (USE)",answer:"used",why:"Used paper nghĩa là giấy đã qua sử dụng; “used” là tính từ phân từ của use.",vi:"Tại hội chợ trường này, bạn có thể đổi giấy đã qua sử dụng lấy vở."}]},
+{title:"Bài 4 – Choose the best answer",desc:"Choose the best answer A, B, C or D. (1.0 point)",questions:[
+{type:"mc",q:"1. Mi ______ playing computer games because it’s not good for her eyes.",options:["A. likes","B. loves","C. hates","D. enjoys"],correct:2,why:"Đáp án C. hates. Câu nói rằng chơi trò chơi máy tính không tốt cho mắt nên Mi ghét/không thích hoạt động đó.",vi:"Mi ghét chơi trò chơi máy tính vì điều đó không tốt cho mắt của bạn ấy."},
+{type:"mc",q:"2. - ______ you have breakfast every morning? - Yes, I do, but my sister ______.",options:["A. Are; isn’t","B. Do; don’t","C. Are; does","D. Do; doesn’t"],correct:3,why:"Đáp án D. Do; doesn’t. Câu hỏi hiện tại đơn với chủ ngữ you dùng Do; mệnh đề phủ định với my sister (ngôi thứ ba số ít) dùng doesn’t.",vi:"— Bạn có ăn sáng mỗi sáng không? — Có, tôi có, nhưng chị/em gái tôi thì không."},
+{type:"mc",q:"3. She ______ tired, so she ______ to the nursing home last week.",options:["A. is; doesn’t go","B. was; didn’t go","C. is; doesn’t go","D. was; didn’t went"],correct:1,why:"Đáp án B. was; didn’t go. “Last week” dùng quá khứ đơn; sau didn’t dùng động từ nguyên mẫu go.",vi:"Cô ấy mệt, vì vậy tuần trước cô ấy đã không đến viện dưỡng lão."},
+{type:"mc",q:"4. - What ______ your mother ______ to keep fit? - She ______ jogging.",options:["A. do; do; goes","B. do; does; go","C. does; do; goes","D. does; does; goes"],correct:2,why:"Đáp án C. does; do; goes. Câu hỏi hiện tại đơn với “your mother” dùng does + động từ nguyên mẫu; câu trả lời dùng goes vì chủ ngữ she.",vi:"— Mẹ bạn làm gì để giữ dáng? — Mẹ tôi chạy bộ."},
+{type:"mc",q:"5. - ______ you ______ the football match yesterday? - Yes, I ______.",options:["A. Did; enjoy; did","B. Did; enjoyed; did","C. Do; enjoy; do","D. Do; enjoyed; do"],correct:0,why:"Đáp án A. Did; enjoy; did. “Yesterday” dùng quá khứ đơn; sau Did dùng động từ nguyên mẫu enjoy.",vi:"— Hôm qua bạn có thích trận bóng đá không? — Có, tôi có."}]},
+{title:"Bài 5 – Verb forms",desc:"Fill in each blank with the correct form of the verb in brackets. (2.0 points)",questions:[
+{type:"text",q:"1. - ______ your brother (love) ______ making models? - No, he (not do) ______.",answer:"Does; love; doesn’t",alts:["Does love doesn't","Does; love; does not"],why:"Câu hỏi hiện tại đơn với “your brother” dùng Does + chủ ngữ + động từ nguyên mẫu. Câu trả lời phủ định: he doesn’t.",vi:"— Anh/em trai bạn có thích làm mô hình không? — Không, anh ấy/em ấy không thích."},
+{type:"text",q:"2. The moon (move) ______ around its axis in 24 hours, but it (revolve) ______ around the earth in one year.",answer:"moves; revolves",alts:["moves revolves"],why:"Đây là sự thật khoa học nên dùng hiện tại đơn. Chủ ngữ số ít “the moon” nên hai động từ thêm -s.",vi:"Mặt trăng tự quay quanh trục của nó trong 24 giờ, nhưng nó quay quanh Trái Đất trong một năm."},
+{type:"text",q:"3. I (get up) ______ at 7 a.m. every Sunday because my drawing lesson (start) ______ at 8 a.m.",answer:"get up; starts",alts:["get up starts"],why:"“Every Sunday” diễn tả thói quen nên dùng hiện tại đơn: I get up; my drawing lesson starts.",vi:"Tôi thức dậy lúc 7 giờ sáng mỗi Chủ nhật vì buổi học vẽ của tôi bắt đầu lúc 8 giờ."},
+{type:"text",q:"4. - What ______ you (do) ______ last weekend? - I (go) ______ to the SOS Children’s Village to tutor the children there.",answer:"did; do; went",alts:["did do went"],why:"“Last weekend” dùng quá khứ đơn. Câu hỏi dùng did + do; câu trả lời dùng quá khứ của go là went.",vi:"— Cuối tuần trước bạn đã làm gì? — Tôi đã đến Làng trẻ em SOS để dạy kèm các em ở đó."},
+{type:"text",q:"5. Yesterday we (listen) ______ to an interesting lecture about coloured vegetables in our cooking class, and then we (make) ______ a salad.",answer:"listened; made",alts:["listened made"],why:"“Yesterday” dùng quá khứ đơn: listen → listened; make là động từ bất quy tắc, quá khứ là made.",vi:"Hôm qua, chúng tôi nghe một bài giảng thú vị về rau củ nhiều màu sắc trong lớp nấu ăn, sau đó chúng tôi làm một món sa-lát."}]},
+{title:"Bài 6 – Email",desc:"Fill in each blank in the following email with a suitable word. (1.0 point)",questions:[
+{type:"text",q:"Blank (1): Thanks for your email. Now I tell you about my favourite (1) ______.",answer:"hobby",why:"“Favourite hobby” nghĩa là sở thích yêu thích; phù hợp với nội dung email nói về hoạt động lúc rảnh.",vi:"Cảm ơn email của bạn. Bây giờ mình kể cho bạn về sở thích yêu thích của mình."},
+{type:"text",q:"Blank (2): I (2) ______ this hobby two years ago.",answer:"started",why:"“Two years ago” là mốc thời gian trong quá khứ nên dùng quá khứ đơn: start → started.",vi:"Mình bắt đầu sở thích này cách đây hai năm."},
+{type:"text",q:"Blank (3): I can make different kinds of cards (3) ______ my family, teachers, and friends.",answer:"for",why:"“Make something for somebody” nghĩa là làm thứ gì cho ai.",vi:"Mình có thể làm nhiều loại thiệp khác nhau cho gia đình, thầy cô và bạn bè."},
+{type:"text",q:"Blank (4): Making cards (4) ______ me more patient and creative.",answer:"makes",why:"Chủ ngữ “Making cards” là một hoạt động, được xem như danh từ số ít nên động từ hiện tại đơn thêm -s: makes.",vi:"Việc làm thiệp khiến mình kiên nhẫn và sáng tạo hơn."},
+{type:"text",q:"Blank (5): I’m sending you a card next week (5) ______ your birthday.",answer:"on",why:"Dùng giới từ on trước dịp/ngày sinh nhật: on your birthday.",vi:"Tuần tới mình sẽ gửi cho bạn một tấm thiệp nhân dịp sinh nhật của bạn."}]}
+];
+let si=0, qi=0;
+let states=sections.map(s=>s.questions.map(()=>({locked:false,correct:false,value:null})));
+function unlock(){if(document.getElementById('pw').value==='367'){document.getElementById('login').hidden=true;document.getElementById('app').hidden=false;render()}else document.getElementById('pwmsg').textContent='Mật khẩu chưa đúng. Vui lòng thử lại.'}
+document.getElementById('pw').addEventListener('keydown',e=>{if(e.key==='Enter')unlock()});
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function norm(s){return String(s||'').trim().toLowerCase().replace(/[.,;:!?]/g,'').replace(/\s+/g,' ')}
+function render(){
+ const sec=sections[si], q=sec.questions[qi], st=states[si][qi];
+ document.getElementById('sectionNav').innerHTML=sections.map((s,i)=>`<button class="${i===si?'':'secondary'}" onclick="setSection(${i})">${esc(s.title)}</button>`).join('');
+ document.getElementById('sectionHeading').innerHTML=`<h2>${esc(sec.title)}</h2><div class="muted">${esc(sec.desc)}</div>`;
+ document.getElementById('bar').style.width=((qi+1)/sec.questions.length*100)+'%';
+ let content='';
+ if(q.type==='mc'){
+  content=`<div class="sentence">${q.q}</div>`+q.options.map((o,i)=>`<label class="option ${st.locked?'locked':''}"><input type="radio" name="ans" ${st.locked?'disabled':''} ${st.value===i?'checked':''} onchange="answerMC(${i})"><span>${o}</span></label>`).join('');
+ }else{
+  content=`<div class="sentence">${esc(q.q)}</div><input id="typed" ${st.locked?'disabled':''} value="${st.locked?esc(st.value||''):''}" placeholder="Type your answer..." style="width:100%;padding:12px;border:1px solid #bdcbd8;border-radius:9px" onkeydown="if(event.key==='Enter')submitText()"> <div style="margin-top:10px"><button onclick="submitText()" ${st.locked?'disabled':''}>Check answer</button></div>`;
+ }
+ if(st.locked){
+  content+=`<div class="feedback ${st.correct?'correct':'wrong'}"><b>${st.correct?'Correct! ✓':'Not quite ✗'}</b><br>${st.correct?'Bạn đã trả lời đúng.':'Đáp án đúng: '+(q.type==='mc'?q.options[q.correct].replace(/<[^>]*>/g,''):q.answer)}<p><b>Giải thích:</b> ${q.why}</p><p><b>Nghĩa tiếng Việt:</b> ${q.vi}</p></div>`;
+ }
+ document.getElementById('questionArea').innerHTML=content;
+ document.getElementById('prev').disabled=qi===0;
+ document.getElementById('next').disabled=qi===sec.questions.length-1;
+ document.getElementById('counter').textContent=`Câu ${qi+1}/${sec.questions.length}`;
+ const done=states[si].filter(x=>x.locked).length, pts=states[si].filter(x=>x.locked&&x.correct).length;
+ document.getElementById('score').textContent=`${pts}/${sec.questions.length} điểm · Đã làm ${done}/${sec.questions.length} câu`;
+}
+function answerMC(i){const st=states[si][qi];if(st.locked)return;st.value=i;st.correct=i===sections[si].questions[qi].correct;st.locked=true;render()}
+function submitText(){const st=states[si][qi];if(st.locked)return;const q=sections[si].questions[qi];const val=document.getElementById('typed').value.trim();if(!val){alert('Vui lòng nhập đáp án trước khi chấm.');return}st.value=val;const accepted=[q.answer,...(q.alts||[])].some(a=>norm(a)===norm(val));st.correct=accepted;st.locked=true;render()}
+function move(d){qi=Math.max(0,Math.min(sections[si].questions.length-1,qi+d));render()}
+function setSection(i){si=i;qi=0;render()}
+function jumpFirst(){qi=0;render()}
+function resetSection(){if(!confirm('Bạn có chắc muốn làm lại toàn bộ câu hỏi trong phần này? Điểm và trạng thái khóa của phần này sẽ được xóa.'))return;states[si]=sections[si].questions.map(()=>({locked:false,correct:false,value:null}));qi=0;render()}
+</script>
+</body>
+</html>
